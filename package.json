@@ -5,6 +5,7 @@
   "homepage": "https://github.com/eslint/espree",
   "main": "dist/espree.cjs",
   "type": "module",
+  "types": "dist/espree.d.ts",
   "exports": {
     ".": [
       {
@@ -19,7 +20,7 @@
   "version": "9.3.0",
   "files": [
     "lib",
-    "dist/espree.cjs",
+    "dist/espree.d.ts",
     "espree.js"
   ],
   "engines": {
@@ -40,6 +41,7 @@
     "@rollup/plugin-json": "^4.1.0",
     "@rollup/plugin-node-resolve": "^11.2.0",
     "c8": "^7.11.0",
+    "@types/eslint-visitor-keys": "^1.0.0",
     "chai": "^4.3.4",
     "eslint": "^7.22.0",
     "eslint-config-eslint": "^7.0.0",
@@ -55,6 +57,7 @@
     "rollup": "^2.41.2",
     "shelljs": "^0.3.0",
     "shelljs-nodecli": "^0.1.1",
+    "typescript": "^4.5.5",
     "unicode-6.3.0": "^0.7.5"
   },
   "keywords": [
@@ -70,6 +73,7 @@
     "unit:esm": "c8 mocha --color --reporter progress --timeout 30000 'tests/lib/**/*.js'",
     "unit:cjs": "mocha --color --reporter progress --timeout 30000 tests/lib/commonjs.cjs",
     "test": "npm-run-all -p unit lint",
+    "tsc": "tsc",
     "lint": "eslint \"*.?(c)js\" lib/ tests/lib/",
     "fixlint": "npm run lint -- --fix",
     "build": "rollup -c rollup.config.js",

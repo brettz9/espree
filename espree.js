@@ -56,6 +56,13 @@
  */
 /* eslint no-undefined:0, no-use-before-define: 0 */
 
+/**
+ * @typedef {import('acorn')} acorn
+ * @typedef {import('./lib/options.js').ParserOptions} ParserOptions
+ * @typedef {import('./lib/acornhelper').EnhancedSyntaxError} EnhancedSyntaxError
+ * @typedef {import('./lib/acornhelper').AcornParser} AcornParser
+ */
+
 import * as acorn from "acorn";
 import jsx from "acorn-jsx";
 import astNodeTypes from "./lib/ast-node-types.js";
@@ -67,23 +74,50 @@ import { getLatestEcmaVersion, getSupportedEcmaVersions } from "./lib/options.js
 
 // To initialize lazily.
 const parsers = {
-    _regular: null,
-    _jsx: null,
+    _regular: /** @type {AcornParser|null} */ (null),
+    _jsx: /** @type {AcornParser|null} */ (null),
 
+    /**
+     * Returns regular Parser
+     * @returns {AcornParser} Regular Acorn parser
+     */
     get regular() {
         if (this._regular === null) {
-            this._regular = acorn.Parser.extend(espree());
+            const Espree = /** @type {unknown} */ (espree());
+            const ret = /** @type {unknown} */ (acorn.Parser.extend(
+                /** @type {(BaseParser: typeof acorn.Parser) => typeof acorn.Parser} */ (Espree)
+            ));
+
+            this._regular = /** @type {AcornParser} */ (ret);
+
+            return /** @type {AcornParser} */ (ret);
         }
         return this._regular;
     },
 
+    /**
+     * Returns JSX Parser
+     * @returns {AcornParser} JSX Acorn parser
+     */
     get jsx() {
         if (this._jsx === null) {
-            this._jsx = acorn.Parser.extend(jsx(), espree());
+            const Espree = /** @type {unknown} */ (espree());
+            const ret = /** @type {unknown} */ (acorn.Parser.extend(
+                jsx(), /** @type {(BaseParser: typeof acorn.Parser) => typeof acorn.Parser} */ (Espree)
+            ));
+
+            this._jsx = /** @type {AcornParser} */ (ret);
+
+            return /** @type {AcornParser} */ (ret);
         }
         return this._jsx;
     },
 
+    /**
+     * Returns Regular or JSX Parser
+     * @param {ParserOptions} options Parser options
+     * @returns {AcornParser} Regular or JSX Acorn parser
+     */
     get(options) {
         const useJsx = Boolean(
             options &&
@@ -102,9 +136,9 @@ const parsers = {
 /**
  * Tokenizes the given code.
  * @param {string} code The code to tokenize.
- * @param {Object} options Options defining how to tokenize.
- * @returns {Token[]} An array of tokens.
- * @throws {SyntaxError} If the input code is invalid.
+ * @param {ParserOptions} options Options defining how to tokenize.
+ * @returns {acorn.Token[]} An array of tokens.
+ * @throws {EnhancedSyntaxError} If the input code is invalid.
  * @private
  */
 export function tokenize(code, options) {
@@ -125,9 +159,9 @@ export function tokenize(code, options) {
 /**
  * Parses the given code.
  * @param {string} code The code to tokenize.
- * @param {Object} options Options defining how to tokenize.
- * @returns {ASTNode} The "Program" AST node.
- * @throws {SyntaxError} If the input code is invalid.
+ * @param {ParserOptions} options Options defining how to tokenize.
+ * @returns {acorn.Node} The "Program" AST node.
+ * @throws {EnhancedSyntaxError} If the input code is invalid.
  */
 export function parse(code, options) {
     const Parser = parsers.get(options);
@@ -145,17 +179,15 @@ export const version = espreeVersion;
 // Deep copy.
 /* istanbul ignore next */
 export const Syntax = (function() {
-    let name,
+    let /** @type {Object<string,string>} */
         types = {};
 
     if (typeof Object.create === "function") {
         types = Object.create(null);
     }
 
-    for (name in astNodeTypes) {
-        if (Object.hasOwnProperty.call(astNodeTypes, name)) {
-            types[name] = astNodeTypes[name];
-        }
+    for (const [name, astNodeType] of Object.entries(astNodeTypes)) {
+        types[name] = astNodeType;
     }
 
     if (typeof Object.freeze === "function") {
