@@ -1,5 +1,8 @@
 import * as acorn from 'acorn';
 
+// declare namespace acorn {
+// }
+
 type tokTypesType = typeof acorn.tokTypes;
 
 type ecmaVersion = 10 | 9 | 8 | 7 | 6 | 5 | 3 | 11 | 12 | 13 | 2015 | 2016 | 2017 | 2018 | 2019 | 2020 | 2021 | 2022 | 'latest';
@@ -111,34 +114,55 @@ export interface EnhancedTokTypes extends CopyAll<tokTypesType> {
   questionDot: acorn.TokenType;
 }
 
+type Espree = () => (Parser: typeof acorn.Parser) => EspreeParser;
+
+type AcornPlugin = (BaseParser: typeof acorn.Parser) => typeof acorn.Parser;
+
+export class EspreeParser extends AcornParser {
+  constructor(options: acorn.Options | null, input: string | object);
+
+  parse() : EsprimaProgramNode;
+
+  raise(pos: number, message: string) : void;
+
+  raiseRecoverable(pos: number, message: string) : void;
+
+  unexpected(pos: number) : void;
+
+  tokenize(): EspreeTokens|null;
+
+  // Begin Acorn override
+  // constructor(options: acorn.Options, input: string, startPos?: number);
+
+  finishNode(node: acorn.Node, type: string): acorn.Node;
+
+  finishNodeAt(node: acorn.Node, type: string, pos: number, loc: acorn.Position): acorn.Node;
+
+  parse(): acorn.Node;
+
+  next(): void;
+
+  nextToken(): void;
+
+  parseTopLevel(node: acorn.Node): acorn.Node;
+
+  jsx_readString(quote: number): void;
+
+  options: {
+    ecmaVersion: ecmaVersion,
+    locations: object
+  };
+
+  lineStart: number | undefined;
+  curLine: number;
+  start: number;
+  end: number;
+  input: string;
+  type: acorn.TokenType;
+}
+
+// Unspecified in Acorn *.d.ts file, but provided by Acorn
 export class AcornParser extends acorn.Parser  {
-    constructor(options: acorn.Options, input: string, startPos?: number);
-
-    parse(): acorn.Node;
-
-    next(): void;
-    nextToken(): void;
-
-    jsx_readString(quote: number): void;
-
-    parseTopLevel(node: acorn.Node): acorn.Node;
-
-    finishNode(node: acorn.Node, type: string): acorn.Node;
-
-    finishNodeAt(node: acorn.Node, type: string, pos: number, loc: acorn.Position): acorn.Node;
-
-    options: {
-      ecmaVersion: ecmaVersion,
-      locations: object
-    };
-
-    lineStart: number | undefined;
-    curLine: number;
-    start: number;
-    end: number;
-    input: string;
-    type: acorn.TokenType;
-
     static acorn: {
       tokTypes: tokTypesType,
       getLineInfo: typeof acorn.getLineInfo

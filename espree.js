@@ -59,8 +59,9 @@
 /**
  * @typedef {import('acorn')} acorn
  * @typedef {import('./lib/options.js').ParserOptions} ParserOptions
+ * @typedef {import('./lib/acornhelper').AcornPlugin} AcornPlugin
+ * @typedef {import('./lib/acornhelper').EspreeParser} EspreeParser
  * @typedef {import('./lib/acornhelper').EnhancedSyntaxError} EnhancedSyntaxError
- * @typedef {import('./lib/acornhelper').AcornParser} AcornParser
  */
 
 import * as acorn from "acorn";
@@ -74,41 +75,38 @@ import { getLatestEcmaVersion, getSupportedEcmaVersions } from "./lib/options.js
 
 // To initialize lazily.
 const parsers = {
-    _regular: /** @type {AcornParser|null} */ (null),
-    _jsx: /** @type {AcornParser|null} */ (null),
+    _regular: /** @type {EspreeParser|null} */ (null),
+    _jsx: /** @type {EspreeParser|null} */ (null),
 
     /**
      * Returns regular Parser
-     * @returns {AcornParser} Regular Acorn parser
+     * @returns {EspreeParser} Regular Espree parser
      */
     get regular() {
         if (this._regular === null) {
-            const Espree = /** @type {unknown} */ (espree());
-            const ret = /** @type {unknown} */ (acorn.Parser.extend(
-                /** @type {(BaseParser: typeof acorn.Parser) => typeof acorn.Parser} */ (Espree)
-            ));
+            const espreeParserFactory = espree();
+            const ret = espreeParserFactory(acorn.Parser);
 
-            this._regular = /** @type {AcornParser} */ (ret);
+            this._regular = /** @type {EspreeParser} */ (ret);
 
-            return /** @type {AcornParser} */ (ret);
+            return /** @type {EspreeParser} */ (ret);
         }
         return this._regular;
     },
 
     /**
      * Returns JSX Parser
-     * @returns {AcornParser} JSX Acorn parser
+     * @returns {EspreeParser} JSX Espree parser
      */
     get jsx() {
         if (this._jsx === null) {
-            const Espree = /** @type {unknown} */ (espree());
-            const ret = /** @type {unknown} */ (acorn.Parser.extend(
-                jsx(), /** @type {(BaseParser: typeof acorn.Parser) => typeof acorn.Parser} */ (Espree)
-            ));
+            const jsxFactory = jsx();
+            const espreeParserFactory = espree();
+            const ret = /** @type {unknown} */ (espreeParserFactory(jsxFactory(acorn.Parser)));
 
-            this._jsx = /** @type {AcornParser} */ (ret);
+            this._jsx = /** @type {EspreeParser} */ (ret);
 
-            return /** @type {AcornParser} */ (ret);
+            return /** @type {EspreeParser} */ (ret);
         }
         return this._jsx;
     },
@@ -116,7 +114,7 @@ const parsers = {
     /**
      * Returns Regular or JSX Parser
      * @param {ParserOptions} options Parser options
-     * @returns {AcornParser} Regular or JSX Acorn parser
+     * @returns {EspreeParser} Regular or JSX Acorn parser
      */
     get(options) {
         const useJsx = Boolean(
