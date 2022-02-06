@@ -178,15 +178,17 @@ export class AcornParser extends acorn.Parser {
     ecmaVersion: ecmaVersion,
     locations: object
   };
-
   curLine: number;
   start: number;
   end: number;
   input: string;
   type: acorn.TokenType;
 
-  // TS not erring without this, but we do use it, and it is in Acorn (though not its *.d.ts)
+  // TS not erring without these, but we do use some, and it is in Acorn (though not its *.d.ts)
   lineStart: number | undefined;
+  raise(pos: number, message: string) : void;
+  raiseRecoverable(pos: number, message: string) : void;
+  unexpected(pos: number) : void;
 
   // In Acorn JSX but not its *.d.ts
   jsx_readString?(quote: number): void;

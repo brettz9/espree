@@ -61,6 +61,7 @@
  * @typedef {import('./lib/acornhelper').ParserOptions} ParserOptions
  * @typedef {import('./lib/acornhelper').EnhancedSyntaxError} EnhancedSyntaxError
  * @typedef {typeof import('./lib/acornhelper').EspreeParser} EspreeParser
+ * @typedef {typeof import('./lib/acornhelper').AcornParser} AcornParser
  */
 
 import * as acorn from "acorn";
@@ -84,12 +85,9 @@ const parsers = {
     get regular() {
         if (this._regular === null) {
             const espreeParserFactory = espree();
-            const AcornParser = /** @type {unknown} */ (acorn.Parser);
-            const ret = /** @type {unknown} */ (espreeParserFactory(/** @type {EspreeParser} */ (AcornParser)));
 
-            this._regular = /** @type {EspreeParser} */ (ret);
-
-            return /** @type {EspreeParser} */ (ret);
+            // Cast the `acorn.Parser` to our own for required properties not specified in *.d.ts
+            this._regular = espreeParserFactory(/** @type {AcornParser} */ (acorn.Parser));
         }
         return this._regular;
     },
@@ -100,14 +98,11 @@ const parsers = {
      */
     get jsx() {
         if (this._jsx === null) {
-            const Espree = /** @type {unknown} */ (espree());
-            const ret = /** @type {unknown} */ (acorn.Parser.extend(
-                jsx(), /** @type {(BaseParser: typeof acorn.Parser) => typeof acorn.Parser} */ (Espree)
-            ));
+            const espreeParserFactory = espree();
+            const jsxFactory = jsx();
 
-            this._jsx = /** @type {EspreeParser} */ (ret);
-
-            return /** @type {EspreeParser} */ (ret);
+            // Cast the `acorn.Parser` to our own for required properties not specified in *.d.ts
+            this._jsx = espreeParserFactory(/** @type {AcornParser} */ (jsxFactory(acorn.Parser)));
         }
         return this._jsx;
     },
