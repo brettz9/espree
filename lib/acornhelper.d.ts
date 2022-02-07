@@ -3,7 +3,7 @@ import jsx from "acorn-jsx";
 
 type tokTypesType = typeof acorn.tokTypes;
 
-type ecmaVersion = 10 | 9 | 8 | 7 | 6 | 5 | 3 | 11 | 12 | 13 | 2015 | 2016 | 2017 | 2018 | 2019 | 2020 | 2021 | 2022 | 'latest';
+type ecmaVersion = acorn.ecmaVersion;
 
 export interface FixedAcornNode extends acorn.Node {
   tail?: boolean
@@ -157,38 +157,10 @@ export interface ParserOptions extends jsx.Options {
 }
 
 export class AcornParser extends acorn.Parser {
-  // Unspecified in Acorn *.d.ts file, but provided by Acorn
-  static acorn: {
-    tokTypes: tokTypesType,
-    getLineInfo: typeof acorn.getLineInfo
-  }
-
   // Added by acorn-jsx plugin
   static acornJsx?: {
     tokTypes: tokTypesType
   }
-
-  // In Acorn but not its *.d.ts
-  next(): void;
-  nextToken(): void;
-  parseTopLevel(node: acorn.Node): acorn.Node;
-  finishNode(node: acorn.Node, type: string): acorn.Node;
-  finishNodeAt(node: acorn.Node, type: string, pos: number, loc: acorn.Position): acorn.Node;
-  options: {
-    ecmaVersion: ecmaVersion,
-    locations: object
-  };
-  curLine: number;
-  start: number;
-  end: number;
-  input: string;
-  type: acorn.TokenType;
-
-  // TS not erring without these, but we do use some, and it is in Acorn (though not its *.d.ts)
-  lineStart: number | undefined;
-  raise(pos: number, message: string) : void;
-  raiseRecoverable(pos: number, message: string) : void;
-  unexpected(pos: number) : void;
 
   // In Acorn JSX but not its *.d.ts
   jsx_readString?(quote: number): void;
