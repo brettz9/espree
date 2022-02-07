@@ -47,7 +47,6 @@
     "eslint-plugin-jsdoc": "^32.2.0",
     "eslint-plugin-node": "^11.1.0",
     "eslint-release": "^3.2.0",
-    "esprima": "latest",
     "esprima-fb": "^8001.2001.0-dev-harmony-fb",
     "json-diff": "^0.5.4",
     "mocha": "^8.3.1",

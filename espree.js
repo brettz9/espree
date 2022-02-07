@@ -58,10 +58,149 @@
 
 /**
  * @typedef {import('acorn')} acorn
- * @typedef {import('./lib/acornhelper').ParserOptions} ParserOptions
- * @typedef {import('./lib/acornhelper').EnhancedSyntaxError} EnhancedSyntaxError
- * @typedef {typeof import('./lib/acornhelper').EspreeParser} EspreeParser
- * @typedef {typeof import('./lib/acornhelper').AcornParser} AcornParser
+ * @typedef {typeof import('./lib/espree').AcornParser} AcornParser
+ * @typedef {import('./lib/espree').EnhancedSyntaxError} EnhancedSyntaxError
+ * @typedef {import('./lib/espree').EspreeParser} EspreeParser
+ * @typedef {typeof acorn.tokTypes} tokTypesType
+ * @typedef {acorn.ecmaVersion} ecmaVersion
+ *
+ * @typedef {{
+ *   tail?: boolean
+ * } & acorn.Node} FixedAcornNode
+ *
+ * @typedef {{
+ *   generator?: boolean
+ * } & acorn.Node} EsprimaNode
+ */
+
+/**
+ * First three properties as in `acorn.Comment`; next two as in `acorn.Comment`
+ * but optional. Last is different as has to allow `undefined`
+ * @typedef {{
+ *   type: string,
+ *   value: string,
+ *   range?: [number, number],
+ *   start?: number,
+ *   end?: number,
+ *   loc?: {
+ *     start: acorn.Position | undefined,
+ *     end: acorn.Position | undefined
+ *   }
+ * }} EsprimaComment
+ *
+ * @typedef {{
+ *   originalSourceType: "script"|"module"|"commonjs";
+ *   ecmaVersion: ecmaVersion;
+ *   comments: EsprimaComment[]|null;
+ *   impliedStrict: boolean;
+ *   lastToken: acorn.Token|null;
+ *   templateElements: (FixedAcornNode)[];
+ *   jsxAttrValueToken: boolean;
+ * }} BaseStateObject
+ *
+ * @typedef {{
+ *   tokens: null;
+ * } & BaseStateObject} StateObject
+ *
+ * @typedef {{
+ *   tokens: EspreeTokens;
+ * } & BaseStateObject} StateObjectWithTokens
+ */
+/**
+ * Based on the `acorn.Token` class, but without a fixed `type` (since we need
+ * it to be a string). Avoiding `type` lets us make one extending interface
+ * more strict and another more lax.
+ *
+ * We could make `value` more strict to `string` even though the original is
+ * `any`.
+ *
+ * `start` and `end` are required in `acorn.Token`
+ *
+ * `loc` and `range` are from `acorn.Token`
+ *
+ * Adds `regex`.
+ * @typedef {{
+ *   value: any;
+ *   start?: number;
+ *   end?: number;
+ *   loc?: acorn.SourceLocation;
+ *   range?: [number, number];
+ *   regex?: {flags: string, pattern: string};
+ * }} BaseEsprimaToken
+ *
+ * @typedef {{
+ *   type: string;
+ * } & BaseEsprimaToken} EsprimaToken
+ *
+ * @typedef {{
+ *   type: string | acorn.TokenType;
+ * } & BaseEsprimaToken} EsprimaTokenFlexible
+ *
+ * @typedef {{
+ *   jsxAttrValueToken: boolean;
+ *   ecmaVersion: ecmaVersion;
+ * }} ExtraNoTokens
+ *
+ * @typedef {{
+ *   tokens: EsprimaTokenFlexible[]
+ * } & ExtraNoTokens} Extra
+ *
+ * @typedef {{
+ *   comments?: EsprimaComment[]
+ * } & acorn.Token[]} EspreeTokens
+ */
+/**
+ * Where is `jsxAttrValueToken` from?
+ *
+ * `jsxName`, `jsxTagEnd`, and `jsxTagStart` are used in Acorn JSX but not
+ * in its *d.ts
+ *
+ * `invalidTemplate` and `questionDot` are not in *.d.ts
+ * @todo Move three to acorn JSX?
+ * @typedef {{
+ *   jsxAttrValueToken?: acorn.TokenType;
+ *   jsxName?: acorn.TokenType;
+ *   jsxTagEnd?: acorn.TokenType;
+ *   jsxTagStart?: acorn.TokenType;
+ *   invalidTemplate: acorn.TokenType;
+ *   questionDot: acorn.TokenType;
+ * } & tokTypesType} EnhancedTokTypes
+ */
+/**
+ * `jsx.Options` gives us 2 optional properties, so extend it
+ *
+ * `allowReserved`, `ranges`, `locations`, `allowReturnOutsideFunction`,
+ * `onToken`, and `onComment` are as in `acorn.Options`
+ *
+ * `ecmaVersion` as in `acorn.Options` though optional
+ *
+ * `sourceType` as in `acorn.Options` but also allows `commonjs`
+ *
+ * `ecmaFeatures`, `range`, `loc`, `tokens` are not in `acorn.Options`
+ *
+ * `comment` is not in `acorn.Options` and doesn't err without it, but is used
+ * @typedef {{
+ *   allowReserved?: boolean | "never",
+ *   ranges?: boolean,
+ *   locations?: boolean,
+ *   allowReturnOutsideFunction?: boolean,
+ *   onToken?: ((token: acorn.Token) => any) | acorn.Token[]
+ *   onComment?: ((
+ *     isBlock: boolean, text: string, start: number, end: number, startLoc?: acorn.Position,
+ *     endLoc?: acorn.Position
+ *   ) => void) | acorn.Comment[]
+ *   ecmaVersion?: ecmaVersion,
+ *   sourceType?: "script"|"module"|"commonjs",
+ *   ecmaFeatures?: {
+ *     jsx?: boolean,
+ *     globalReturn?: boolean,
+ *     impliedStrict?: boolean
+ *   },
+ *   range?: boolean,
+ *   loc?: boolean,
+ *   tokens?: boolean | null
+ *   comment?: boolean,
+ * } & jsx.Options} ParserOptions
  */
 
 import * as acorn from "acorn";
