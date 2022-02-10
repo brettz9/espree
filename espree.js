@@ -58,7 +58,7 @@
 
 /**
  * @typedef {import('acorn')} acorn
- * @typedef {typeof import('./lib/espree').AcornParser} AcornParser
+ * @typedef {typeof import('acorn-jsx').AcornJsxParser} AcornJsxParser
  * @typedef {import('./lib/espree').EnhancedSyntaxError} EnhancedSyntaxError
  * @typedef {import('./lib/espree').EspreeParser} EspreeParser
  * @typedef {typeof import('./lib/espree').EspreeParser} IEspreeParser
@@ -227,7 +227,7 @@ const parsers = {
             const espreeParserFactory = espree();
 
             // Cast the `acorn.Parser` to our own for required properties not specified in *.d.ts
-            this._regular = espreeParserFactory(/** @type {AcornParser} */ (acorn.Parser));
+            this._regular = espreeParserFactory(/** @type {AcornJsxParser} */ (acorn.Parser));
         }
         return this._regular;
     },
@@ -242,7 +242,7 @@ const parsers = {
             const jsxFactory = jsx();
 
             // Cast the `acorn.Parser` to our own for required properties not specified in *.d.ts
-            this._jsx = espreeParserFactory(/** @type {AcornParser} */ (jsxFactory(acorn.Parser)));
+            this._jsx = espreeParserFactory(/** @type {AcornJsxParser} */ (jsxFactory(acorn.Parser)));
         }
         return this._jsx;
     },
