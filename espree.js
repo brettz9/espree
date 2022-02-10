@@ -61,6 +61,7 @@
  * @typedef {typeof import('./lib/espree').AcornParser} AcornParser
  * @typedef {import('./lib/espree').EnhancedSyntaxError} EnhancedSyntaxError
  * @typedef {import('./lib/espree').EspreeParser} EspreeParser
+ * @typedef {typeof import('./lib/espree').EspreeParser} IEspreeParser
  * @typedef {typeof acorn.tokTypes} tokTypesType
  * @typedef {acorn.ecmaVersion} ecmaVersion
  *
@@ -214,12 +215,12 @@ import { getLatestEcmaVersion, getSupportedEcmaVersions } from "./lib/options.js
 
 // To initialize lazily.
 const parsers = {
-    _regular: /** @type {EspreeParser|null} */ (null),
-    _jsx: /** @type {EspreeParser|null} */ (null),
+    _regular: /** @type {IEspreeParser|null} */ (null),
+    _jsx: /** @type {IEspreeParser|null} */ (null),
 
     /**
      * Returns regular Parser
-     * @returns {EspreeParser} Regular Acorn parser
+     * @returns {IEspreeParser} Regular Acorn parser
      */
     get regular() {
         if (this._regular === null) {
@@ -233,7 +234,7 @@ const parsers = {
 
     /**
      * Returns JSX Parser
-     * @returns {EspreeParser} JSX Acorn parser
+     * @returns {IEspreeParser} JSX Acorn parser
      */
     get jsx() {
         if (this._jsx === null) {
@@ -249,7 +250,7 @@ const parsers = {
     /**
      * Returns Regular or JSX Parser
      * @param {ParserOptions} options Parser options
-     * @returns {EspreeParser} Regular or JSX Acorn parser
+     * @returns {IEspreeParser} Regular or JSX Acorn parser
      */
     get(options) {
         const useJsx = Boolean(
