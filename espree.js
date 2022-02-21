@@ -56,13 +56,9 @@
  */
 /* eslint no-undefined:0, no-use-before-define: 0 */
 
-/**
- * @typedef {import('acorn')} acorn
- * @typedef {typeof import('acorn-jsx').AcornJsxParser} AcornJsxParser
- * @typedef {import('./lib/espree').EnhancedSyntaxError} EnhancedSyntaxError
- * @typedef {typeof import('./lib/espree').EspreeParser} IEspreeParser
- * @typedef {acorn.ecmaVersion} ecmaVersion
- */
+// ----------------------------------------------------------------------------
+// Types exported from file
+// ----------------------------------------------------------------------------
 /**
  * `jsx.Options` gives us 2 optional properties, so extend it
  *
@@ -86,7 +82,7 @@
  *     isBlock: boolean, text: string, start: number, end: number, startLoc?: acorn.Position,
  *     endLoc?: acorn.Position
  *   ) => void) | acorn.Comment[]
- *   ecmaVersion?: ecmaVersion,
+ *   ecmaVersion?: acorn.ecmaVersion,
  *   sourceType?: "script"|"module"|"commonjs",
  *   ecmaFeatures?: {
  *     jsx?: boolean,
@@ -98,6 +94,17 @@
  *   tokens?: boolean | null
  *   comment?: boolean,
  * } & jsx.Options} ParserOptions
+ */
+
+// ----------------------------------------------------------------------------
+// Local type imports
+// ----------------------------------------------------------------------------
+/**
+ * @local
+ * @typedef {import('acorn')} acorn
+ * @typedef {typeof import('acorn-jsx').AcornJsxParser} AcornJsxParser
+ * @typedef {import('./lib/espree').EnhancedSyntaxError} EnhancedSyntaxError
+ * @typedef {typeof import('./lib/espree').EspreeParser} IEspreeParser
  */
 
 import * as acorn from "acorn";

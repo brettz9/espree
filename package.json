@@ -38,6 +38,7 @@
     "eslint-visitor-keys": "^3.3.0"
   },
   "devDependencies": {
+    "@es-joy/jsdoc-eslint-parser": "^0.4.0",
     "@rollup/plugin-commonjs": "^17.1.0",
     "@rollup/plugin-json": "^4.1.0",
     "@rollup/plugin-node-resolve": "^11.2.0",
