@@ -29,5 +29,10 @@ module.exports = {
                 "no-console": "off"
             }
         }
-    ]
+    ],
+    rules: {
+        "jsdoc/check-tag-names": ["error", {
+            definedTags: ["local"]
+        }]
+    }
 };
