@@ -7,7 +7,7 @@ module.exports = {
         es2020: true
     },
     parserOptions: {
-        ecmaVersion: 2020,
+        ecmaVersion: 2022,
         sourceType: "module"
     },
     overrides: [
@@ -32,7 +32,7 @@ module.exports = {
     ],
     rules: {
         "jsdoc/check-tag-names": ["error", {
-            definedTags: ["local"]
+            definedTags: ["local", "export"]
         }]
     }
 };

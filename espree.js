@@ -77,11 +77,11 @@
  *   ranges?: boolean,
  *   locations?: boolean,
  *   allowReturnOutsideFunction?: boolean,
- *   onToken?: ((token: acorn.Token) => any) | acorn.Token[]
+ *   onToken?: ((token: acorn.Token) => any) | acorn.Token[],
  *   onComment?: ((
  *     isBlock: boolean, text: string, start: number, end: number, startLoc?: acorn.Position,
  *     endLoc?: acorn.Position
- *   ) => void) | acorn.Comment[]
+ *   ) => void) | acorn.Comment[],
  *   ecmaVersion?: acorn.ecmaVersion,
  *   sourceType?: "script"|"module"|"commonjs",
  *   ecmaFeatures?: {
@@ -91,7 +91,7 @@
  *   },
  *   range?: boolean,
  *   loc?: boolean,
- *   tokens?: boolean | null
+ *   tokens?: boolean | null,
  *   comment?: boolean,
  * } & jsx.Options} ParserOptions
  */
