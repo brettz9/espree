@@ -74,7 +74,7 @@
     "unit:cjs": "mocha --color --reporter progress --timeout 30000 tests/lib/commonjs.cjs",
     "test": "npm-run-all -p unit lint",
     "tsc": "tsc",
-    "lint": "eslint \"*.?(c)js\" lib/ tests/lib/",
+    "lint": "eslint .",
     "fixlint": "npm run lint -- --fix",
     "build": "rollup -c rollup.config.js",
     "update-version": "node tools/update-version.js",

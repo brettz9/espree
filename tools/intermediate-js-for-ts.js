@@ -1,65 +1,71 @@
-import {readFile} from 'fs/promises';
-import esquery from 'esquery';
-import jsdocEslintParser from '@es-joy/jsdoc-eslint-parser';
-import estreeToBabel from 'estree-to-babel';
-import generator from '@babel/generator';
+import { readFile } from "fs/promises";
+import esquery from "esquery";
+import jsdocEslintParser from "@es-joy/jsdoc-eslint-parser";
+import estreeToBabel from "estree-to-babel";
+import generator from "@babel/generator";
 
 const generate = generator.default;
 
-const contents = await readFile('./lib/espree.js', 'utf8');
+(async () => {
+    const contents = await readFile("./lib/espree.js", "utf8");
 
-const {visitorKeys, ast} = jsdocEslintParser.parseForESLint(contents, {
-    mode: 'typescript',
-    throwOnTypeParsingErrors: true,
-    babelOptions: {
-        filePath: 'babel.config.cjs'
-    }
-});
+    const { visitorKeys, ast } = jsdocEslintParser.parseForESLint(contents, {
+        mode: "typescript",
+        throwOnTypeParsingErrors: true,
+        babelOptions: {
+            filePath: "babel.config.cjs"
+        }
+    });
 
-// const jsdoc = esquery.query(ast, 'JsdocBlock:has(JsdocTag[tag=local])', { // JsdocTag[tag=param][name=code]
-const typedefSiblingsOfLocal = 'JsdocTag[tag=local] ~ JsdocTag[tag=typedef]';
-const typedefs = esquery.query(ast, typedefSiblingsOfLocal, {
-    visitorKeys
-});
+    // escodegen.attachComments(tree, tree.comments, tree.tokens)
 
-// Replace type shorthands with our typedef long form
-typedefs.forEach(({name, parsedType}) => {
-    const nameNodes = esquery.query(ast, `JsdocTypeName[value=${name}]`, {
+    // const jsdoc = esquery.query(ast, 'JsdocBlock:has(JsdocTag[tag=local])', { // JsdocTag[tag=param][name=code]
+    const typedefSiblingsOfLocal = "JsdocTag[tag=local] ~ JsdocTag[tag=typedef]";
+    const typedefs = esquery.query(ast, typedefSiblingsOfLocal, {
         visitorKeys
     });
-    // Rather than splice from a child whose index we don't know (though we
-    //   could add a property on `jsdoc-eslint-parser`), just copy the keys to
-    //   the existing object
 
-    // Todo: Serialize and graft `rawType` onto source code so preserve
-    //   accurate positions
-    nameNodes.forEach((nameNode) => {
-        Object.keys(nameNode).forEach((prop) => {
-            delete nameNode[prop];
+    // Replace type shorthands with our typedef long form
+    typedefs.forEach(({ name, parsedType }) => {
+        const nameNodes = esquery.query(ast, `JsdocTypeName[value=${name}]`, {
+            visitorKeys
         });
-        Object.entries(parsedType).forEach(([prop, val]) => {
-            nameNode[prop] = val;
+
+        // Rather than splice from a child whose index we don't know (though we
+        //   could add a property on `jsdoc-eslint-parser`), just copy the keys to
+        //   the existing object
+
+        // Todo: Serialize and graft `rawType` onto source code so preserve
+        //   accurate positions
+        nameNodes.forEach(nameNode => {
+            Object.keys(nameNode).forEach(prop => {
+                delete nameNode[prop];
+            });
+            Object.entries(parsedType).forEach(([prop, val]) => {
+                nameNode[prop] = val;
+            });
         });
     });
-});
 
-// Remove local typedefs from AST
-typedefs.forEach((typedef) => {
-    const {tags} = typedef.parent;
-    const idx = tags.indexOf(typedef);
-    tags.splice(idx, 1);
-});
+    // Remove local typedefs from AST
+    typedefs.forEach(typedef => {
+        const { tags } = typedef.parent;
+        const idx = tags.indexOf(typedef);
 
-// console.log('typedefs', typedefs);
-// console.log('jsdocBlocks', ast.jsdocBlocks);
+        tags.splice(idx, 1);
+    });
 
-// Todo: use `@babel/generator` (and ensure can support `comments`, some of
-//   which we need for type information)
+    // console.log('typedefs', typedefs);
+    // console.log('jsdocBlocks', ast.jsdocBlocks);
 
-const babelAST = estreeToBabel(ast);
+    // Todo: use `@babel/generator` (and ensure can support `comments`, some of
+    //   which we need for type information)
 
-const generated = generate(babelAST, {
-    comments: true
-}, contents);
+    const babelAST = estreeToBabel(ast);
 
-console.log(generated);
+    const generated = generate(babelAST, {
+        comments: true
+    }, contents);
+
+    console.log(generated);
+})();
