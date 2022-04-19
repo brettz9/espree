@@ -3,16 +3,13 @@ import { readFile } from "fs/promises";
 import esquery from "esquery";
 import { globby } from "globby";
 
+import * as recast from "recast";
+
 import * as jsdocEslintParser from "@es-joy/jsdoc-eslint-parser/typescript.js";
-import {
-    estreeToString, jsdocVisitorKeys, jsdocTypeVisitorKeys
-} from "@es-joy/jsdoccomment";
 
-// import estreeToBabel from "estree-to-babel";
+import estreeToBabel from "estree-to-babel";
+
 // import generator from "@babel/generator";
-
-import * as escodegen from "@es-joy/escodegen";
-
 // const generate = generator.default;
 
 const {
@@ -28,15 +25,29 @@ const files = await globby(include, {
 await Promise.all([files[1]].map(async file => {
     const contents = await readFile(file, "utf8");
 
-    const tree = jsdocEslintParser.parseForESLint(contents, {
-        mode: "typescript",
-        throwOnTypeParsingErrors: true,
-        babelOptions: {
-            filePath: "babel.config.cjs"
+    let visitorKeys;
+    const { program: estreeAST } = recast.parse(contents, {
+        parser: {
+            parse(source) {
+                const parsedTree = jsdocEslintParser.parseForESLint(source, {
+                    mode: "typescript",
+                    throwOnTypeParsingErrors: true,
+                    babelOptions: {
+                        filePath: "babel.config.cjs"
+                    }
+                });
+
+                ({ visitorKeys } = parsedTree);
+
+                return estreeToBabel(parsedTree.ast);
+            }
         }
     });
 
-    const { visitorKeys, ast: estreeAST } = tree;
+    console.log('estreeAST', estreeAST);
+    throw '';
+
+    // const { visitorKeys, ast: estreeAST } = tree;
 
     // escodegen.attachComments(estreeAST, estreeAST.comments, estreeAST.tokens);
 
@@ -106,45 +117,5 @@ await Promise.all([files[1]].map(async file => {
         }
     }
 
-    // const generated = generate(ast, {
-    //     comments: true
-    // }, contents);
-
-    // Would avoid need for conversion to Babel, but need ESTree
-    //  facilities for AST manipulation
-    // const generated = escodegen.generate(ast, {
-    //     comment: true,
-    //     sourceContent: contents
-    // });
-
-    const generated = escodegen.generate(ast, {
-
-        // comment: true,
-        sourceContent: contents,
-        codegenFactory() {
-            const { CodeGenerator } = escodegen;
-
-            Object.keys(jsdocVisitorKeys).forEach(method => {
-                CodeGenerator.Statement[method] =
-            CodeGenerator.prototype[method] = node =>
-
-                // We have to add our own line break, as `jsdoccomment` (nor
-                //   `comment-parser`) keep track of trailing content
-                ((
-                    node.endLine ? "\n" : ""
-                ) + estreeToString(node) +
-                (node.endLine ? `\n${node.initial}` : " "));
-            });
-
-            Object.keys(jsdocTypeVisitorKeys).forEach(method => {
-                CodeGenerator.Statement[method] =
-            CodeGenerator.prototype[method] = node =>
-                estreeToString(node);
-            });
-
-            return new CodeGenerator();
-        }
-    });
-
-    // console.log(generated);
+    console.log(recast.print(ast).code);
 }));
