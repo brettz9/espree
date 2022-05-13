@@ -78,10 +78,7 @@
  */
 
 /**
- * `jsx.Options` gives us 2 optional properties, so extend it
- *
- * `allowReserved`, `ranges`, `locations`, `allowReturnOutsideFunction`,
- * `onToken`, and `onComment` are as in `acorn.Options`
+ * `allowReserved` is as in `acorn.Options`
  *
  * `ecmaVersion` currently as in `acorn.Options` though optional
  *
