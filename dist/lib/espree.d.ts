@@ -1,46 +1,22 @@
-declare function _default(): (Parser: import('acorn-jsx').AcornJsxParserCtor) => typeof EspreeParser;
+declare function _default(): (Parser: import('acorn-jsx').AcornJsxParserCtor) => EspreeParserCtor;
 export default _default;
-export class EspreeParser extends acorn.Parser {
-    /**
-     * Adapted parser for Espree.
-     * @param {import('../espree').ParserOptions | null} opts Espree options
-     * @param {string | object} code The source code
-     */
-    constructor(opts: import('../espree').ParserOptions | null, code: string | object);
-    /**
-     * Returns Espree tokens.
-     * @returns {import('../espree').EspreeTokens | null} Espree tokens
-     */
-    tokenize(): import('../espree').EspreeTokens | null;
-    /**
-     * Parses.
-     * @returns {{sourceType?: "script" | "module" | "commonjs"; comments?: EsprimaComment[]; tokens?: import('./token-translator').EsprimaToken[]; body: import('acorn').Node[]} & import('acorn').Node} The program Node
-     */
-    parse(): {
+export type EspreeParser = {
+    tokenize: () => import('../espree').EspreeTokens | null;
+    finishNode: (node: import('acorn').Node, type: string) => import('acorn').Node;
+    finishNodeAt: (node: import('acorn').Node, type: string, pos: number, loc: import('acorn').Position) => import('acorn').Node;
+    parse: () => {
         sourceType?: "script" | "module" | "commonjs";
         comments?: EsprimaComment[];
         tokens?: import('./token-translator').EsprimaToken[];
         body: import('acorn').Node[];
     } & import('acorn').Node;
-    /**
-     * Overwrites the default raise method to throw Esprima-style errors.
-     * @param {number} pos The position of the error.
-     * @param {string} message The error message.
-     * @throws {EnhancedSyntaxError} A syntax error.
-     * @returns {void}
-     */
-    raiseRecoverable(pos: number, message: string): void;
-    /**
-     * Esprima-FB represents JSX strings as tokens called "JSXText", but Acorn-JSX
-     * uses regular tt.string without any distinction between this and regular JS
-     * strings. As such, we intercept an attempt to read a JSX string and set a flag
-     * on extra so that when tokens are converted, the next token will be switched
-     * to JSXText via onToken.
-     * @param {number} quote A character code
-     * @returns {void}
-     */
-    jsx_readString(quote: number): void;
-}
+    parseTopLevel: (node: import('acorn').Node) => import('acorn').Node;
+    raise: (pos: number, message: string) => void;
+    raiseRecoverable: (pos: number, message: string) => void;
+    unexpected: (pos: number) => void;
+    jsx_readString: (quote: number) => void;
+} & acorn.Parser;
+export type EspreeParserCtor = (new (opts: import('../espree').ParserOptions | null, code: string | object) => EspreeParser) & Pick<typeof acorn.Parser, "prototype" | "acorn" | "parse" | "parseExpressionAt" | "tokenizer" | "extend">;
 export type EnhancedSyntaxError = {
     index?: number;
     lineNumber?: number;
