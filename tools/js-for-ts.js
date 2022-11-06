@@ -43,39 +43,5 @@ await js2tsAssistant({
             return "acorn.Parser";
         }
         return null;
-    },
-    customParamHandling({
-        tag, identifier, typeCast
-    }) {
-
-        // Since the super class is more restrictive, we hack in some type
-        //   casts which would be difficult for `js2tsAssistant` to auto-detect
-        if (tag.name === "opts") {
-            identifier.jsdoc = typeCast({
-                typeLines: [
-                    {
-                        type: "JsdocTypeLine",
-                        initial: "",
-                        delimiter: "",
-                        postDelimiter: "",
-                        rawType: "acorn.Options"
-                    }
-                ],
-                rawType: "acorn.Options"
-            });
-        } else if (tag.name === "code") {
-            identifier.jsdoc = typeCast({
-                typeLines: [
-                    {
-                        type: "JsdocTypeLine",
-                        initial: "",
-                        delimiter: "",
-                        postDelimiter: "",
-                        rawType: "string"
-                    }
-                ],
-                rawType: "string"
-            });
-        }
     }
 });
