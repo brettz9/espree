@@ -1,5 +1,24 @@
 # Changelog
 
+## [10.2.0](https://github.com/brettz9/espree/compare/espree-v10.1.0...espree-v10.2.0) (2024-09-24)
+
+
+### Features
+
+* add the `eslint-scope` package ([#615](https://github.com/brettz9/espree/issues/615)) ([2ecfb8b](https://github.com/brettz9/espree/commit/2ecfb8ba460a73601b859fd10d000cee817d170c))
+
+
+### Bug Fixes
+
+* update links to `eslint/js` repo ([#619](https://github.com/brettz9/espree/issues/619)) ([956389a](https://github.com/brettz9/espree/commit/956389ac150bd2394bc78a35c2a1f9d794f61ea8))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * eslint-visitor-keys bumped from ^4.0.0 to ^4.1.0
+
 ## [10.1.0](https://github.com/eslint/espree/compare/v10.0.1...v10.1.0) (2024-06-17)
 
 
