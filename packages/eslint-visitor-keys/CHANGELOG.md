@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.1.0](https://github.com/brettz9/espree/compare/eslint-visitor-keys-v4.0.0...eslint-visitor-keys-v4.1.0) (2024-09-24)
+
+
+### Features
+
+* add the `eslint-visitor-keys` package ([#620](https://github.com/brettz9/espree/issues/620)) ([5903929](https://github.com/brettz9/espree/commit/5903929cb65898ffdb6bea7d3fca99781f32ff09))
+
 ## [4.0.0](https://github.com/eslint/eslint-visitor-keys/compare/v3.4.3...v4.0.0) (2024-02-08)
 
 
