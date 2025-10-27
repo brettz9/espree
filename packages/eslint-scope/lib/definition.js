@@ -25,9 +25,22 @@
 import Variable from "./variable.js";
 
 /**
+ * @import * as acorn from "acorn";
+ */
+
+/**
  * @constructor Definition
  */
 class Definition {
+
+    /**
+     * @param {string} type The type of the occurrence (e.g. "Parameter", "Variable", ...).
+     * @param {acorn.Node} name The identifier AST node of the occurrence.
+     * @param {acorn.Node} node The enclosing node of the identifier.
+     * @param {acorn.Node?} [parent] The enclosing statement node of the identifier.
+     * @param {number?} [index] The index in the declaration statement.
+     * @param {string?} [kind] The kind of the declaration statement.
+     */
     constructor(type, name, node, parent, index, kind) {
 
         /**
@@ -66,6 +79,13 @@ class Definition {
  * @constructor ParameterDefinition
  */
 class ParameterDefinition extends Definition {
+
+    /**
+     * @param {acorn.Node} name The identifier AST node of the occurrence.
+     * @param {acorn.Node} node The enclosing node of the parameter.
+     * @param {number?} index The index in the declaration statement.
+     * @param {boolean} rest Whether the parameter definition is a part of a rest parameter.
+     */
     constructor(name, node, index, rest) {
         super(Variable.Parameter, name, node, null, index, null);
 

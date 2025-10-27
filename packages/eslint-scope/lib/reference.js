@@ -22,15 +22,34 @@
   THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-const READ = 0x1;
-const WRITE = 0x2;
-const RW = READ | WRITE;
+/**
+ * @import * as acorn from "acorn";
+ * @import { Scope } from "./scope.js";
+ * @import Variable from "./variable.js";
+ */
+
+const READ = /** @type {const} */ (0x1);
+const WRITE = /** @type {const} */ (0x2);
+const RW = /** @type {const} */ (3); // READ | WRITE
 
 /**
  * A Reference represents a single occurrence of an identifier in code.
  * @constructor Reference
  */
 class Reference {
+
+    /**
+     * @param {acorn.Identifier} ident Identifier syntax node.
+     * @param {Scope} scope Reference to the enclosing Scope.
+     * @param {1|2|3} flag The read-write mode of the reference.
+     * @param {acorn.Node|null|undefined} writeExpr If reference is writeable, this is the tree being written to it.
+     * @param {{
+     *   pattern: acorn.Node,
+     *   node: acorn.Node
+     * } | null | undefined} maybeImplicitGlobal Whether it may be an implicit global.
+     * @param {boolean} partial Whether the Reference might refer to a partial value of writeExpr.
+     * @param {boolean} init Whether the Reference is to write of initialization.
+     */
     constructor(ident, scope, flag, writeExpr, maybeImplicitGlobal, partial, init) {
 
         /**
@@ -56,6 +75,7 @@ class Reference {
          * The variable this reference is resolved with.
          * @member {Variable} Reference#resolved
          */
+        /** @type {Variable|null|undefined} */
         this.resolved = null;
 
         /**
@@ -94,7 +114,7 @@ class Reference {
      * @returns {boolean} static
      */
     isStatic() {
-        return !this.tainted && this.resolved && this.resolved.scope.isStatic();
+        return !this.tainted && Boolean(this.resolved) && (this.resolved?.scope?.isStatic() ?? false);
     }
 
     /**
@@ -145,19 +165,16 @@ class Reference {
 
 /**
  * @constant Reference.READ
- * @private
  */
 Reference.READ = READ;
 
 /**
  * @constant Reference.WRITE
- * @private
  */
 Reference.WRITE = WRITE;
 
 /**
  * @constant Reference.RW
- * @private
  */
 Reference.RW = RW;
 

@@ -23,11 +23,23 @@
 */
 
 /**
+ * @import * as acorn from "acorn";
+ * @import { Scope } from "./scope.js";
+ * @import Reference from "./reference.js";
+ * @import { Definition } from "./definition.js";
+ */
+
+/**
  * A Variable represents a locally scoped identifier. These include arguments to
  * functions.
  * @constructor Variable
  */
 class Variable {
+
+    /**
+     * @param {string} name The name of the variable
+     * @param {Scope} scope The scope of the variable
+     */
     constructor(name, scope) {
 
         /**
@@ -41,6 +53,7 @@ class Variable {
          * statements or as parameter), as AST nodes.
          * @member {espree.Identifier[]} Variable#identifiers
          */
+        /** @type {acorn.Identifier[]} */
         this.identifiers = [];
 
         /**
@@ -49,6 +62,7 @@ class Variable {
          * occurrences only see {@link Variable#defs}.
          * @member {Reference[]} Variable#references
          */
+        /** @type {Reference[]} */
         this.references = [];
 
         /**
@@ -56,6 +70,7 @@ class Variable {
          * statements or as parameter), as custom objects.
          * @member {Definition[]} Variable#defs
          */
+        /** @type {Definition[]} */
         this.defs = [];
 
         this.tainted = false;

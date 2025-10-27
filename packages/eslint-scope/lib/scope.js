@@ -22,6 +22,10 @@
   THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+/**
+ * @import * as acorn from "acorn";
+ */
+
 import estraverse from "estraverse";
 
 import Reference from "./reference.js";
@@ -29,16 +33,23 @@ import Variable from "./variable.js";
 import { Definition } from "./definition.js";
 import { assert } from "./assert.js";
 
+/**
+ * @import ScopeManager from "./scope-manager.js";
+ * @import * as estreeJsx from "estree-jsx";
+ */
+
 const { Syntax } = estraverse;
 
 /**
  * Test if scope is struct
  * @param {Scope} scope scope
- * @param {Block} block block
+ * @param {acorn.Node} block block
  * @param {boolean} isMethodDefinition is method definition
  * @returns {boolean} is strict scope
  */
 function isStrictScope(scope, block, isMethodDefinition) {
+
+    /** @type {acorn.Program|acorn.BlockStatement} */
     let body;
 
     // When upper scope is exists and strict, inner scope is also strict.
@@ -59,21 +70,27 @@ function isStrictScope(scope, block, isMethodDefinition) {
     }
 
     if (scope.type === "function") {
-        if (block.type === Syntax.ArrowFunctionExpression && block.body.type !== Syntax.BlockStatement) {
+        if (block.type === Syntax.ArrowFunctionExpression &&
+
+            /** @type {acorn.ArrowFunctionExpression} */
+            (block).body.type !== Syntax.BlockStatement) {
             return false;
         }
 
         if (block.type === Syntax.Program) {
-            body = block;
+            body = /** @type {acorn.Program} */ (block);
         } else {
-            body = block.body;
+            body =
+                /**
+                 * @type {acorn.FunctionDeclaration}
+                 */ (block).body;
         }
 
         if (!body) {
             return false;
         }
     } else if (scope.type === "global") {
-        body = block;
+        body = /** @type {acorn.Program} */ (block);
     } else {
         return false;
     }
@@ -92,7 +109,7 @@ function isStrictScope(scope, block, isMethodDefinition) {
          * statements, so the `typeof` check is safer than
          * checking for property existence.
          */
-        if (typeof stmt.directive !== "string") {
+        if (!("directive" in stmt) || typeof stmt.directive !== "string") {
             break;
         }
 
@@ -126,6 +143,17 @@ function registerScope(scopeManager, scope) {
  * @constructor Scope
  */
 class Scope {
+
+    /**
+     * @param {ScopeManager} scopeManager The scope manager
+     * @param {"global" | "module" | "function" |
+     *   "function-expression-name" | "block" | "switch" | "catch" |
+     *   "with" | "for" | "class" | "class-field-initializer" |
+     *   "class-static-block"} type The type of scope
+     * @param {Scope | null} upperScope The upper scope of the scope
+     * @param {acorn.Node} block A reference to the scope-defining syntax node.
+     * @param {boolean} isMethodDefinition Whether the scope is a method definition
+     */
     constructor(scopeManager, type, upperScope, block, isMethodDefinition) {
 
         /**
@@ -140,6 +168,7 @@ class Scope {
          * : Variable }</code>.
          * @member {Map} Scope#set
          */
+        /** @type {Map<string, Variable>} */
         this.set = new Map();
 
         /**
@@ -171,6 +200,7 @@ class Scope {
          * The {@link Reference|references} that are not resolved with this scope.
          * @member {Reference[]} Scope#through
          */
+        /** @type {Reference[]} */
         this.through = [];
 
         /**
@@ -179,6 +209,7 @@ class Scope {
          * its first element, as well as all further formal arguments.
          * @member {Variable[]} Scope#variables
          */
+        /** @type {Variable[]} */
         this.variables = [];
 
         /**
@@ -190,6 +221,7 @@ class Scope {
          * formal parameter in the parameter list.
          * @member {Reference[]} Scope#references
          */
+        /** @type {Reference[]} */
         this.references = [];
 
         /**
@@ -198,6 +230,8 @@ class Scope {
          * parent scope.
          * @member {Scope} Scope#variableScope
          */
+
+        /** @type {Scope | undefined} */
         this.variableScope =
             this.type === "global" ||
             this.type === "module" ||
@@ -205,7 +239,7 @@ class Scope {
             this.type === "class-field-initializer" ||
             this.type === "class-static-block"
                 ? this
-                : upperScope.variableScope;
+                : upperScope?.variableScope;
 
         /**
          * Whether this scope is created by a FunctionExpression.
@@ -224,12 +258,14 @@ class Scope {
          */
         this.thisFound = false;
 
+        /** @type {Reference[] | null} */
         this.__left = [];
 
         /**
          * Reference to the parent {@link Scope|scope}.
          * @member {Scope} Scope#upper
          */
+        /** @type {Scope | null} */
         this.upper = upperScope;
 
         /**
@@ -244,7 +280,9 @@ class Scope {
          * List of nested {@link Scope}s.
          * @member {Scope[]} Scope#childScopes
          */
+        /** @type {Scope[]} */
         this.childScopes = [];
+
         if (this.upper) {
             this.upper.childScopes.push(this);
         }
@@ -254,19 +292,35 @@ class Scope {
         registerScope(scopeManager, this);
     }
 
+    /**
+     * Should statically close
+     * @param {ScopeManager} scopeManager The scope manager
+     * @returns {boolean} Whether it should statically close
+     */
     __shouldStaticallyClose(scopeManager) {
         return (!this.dynamic || scopeManager.__isOptimistic() || this.type === "global");
     }
 
+    /**
+     * To statically close reference
+     * @param {Reference} ref The reference
+     * @returns {void}
+     */
     __staticCloseRef(ref) {
         if (!this.__resolve(ref)) {
             this.__delegateToUpperScope(ref);
         }
     }
 
+    /**
+     * To dynamically close reference
+     * @param {Reference} ref The reference
+     * @returns {void}
+     */
     __dynamicCloseRef(ref) {
 
         // notify all names are through to global
+        /** @type {Scope | null} */
         let current = this;
 
         do {
@@ -275,6 +329,11 @@ class Scope {
         } while (current);
     }
 
+    /**
+     * To close
+     * @param {ScopeManager} scopeManager The scope manager
+     * @returns {Scope | null} The upper scope
+     */
     __close(scopeManager) {
         let closeRef;
 
@@ -284,9 +343,11 @@ class Scope {
             closeRef = this.__dynamicCloseRef;
         }
 
-        // Try Resolving all references in this scope.
-        for (let i = 0, iz = this.__left.length; i < iz; ++i) {
-            const ref = this.__left[i];
+        // Try resolving all references in this scope.
+        const left = /** @type {Reference[]} */ (this.__left);
+
+        for (let i = 0, iz = left.length; i < iz; ++i) {
+            const ref = left[i];
 
             closeRef.call(this, ref);
         }
@@ -295,19 +356,31 @@ class Scope {
         return this.upper;
     }
 
-    // To override by function scopes.
-    // References in default parameters isn't resolved to variables which are in their function body.
+    /**
+     * Checks whether it is a valid resolution.
+     * To override by function scopes.
+     * References in default parameters isn't resolved to variables which are
+     *  in their function body.
+     * @param {Reference} ref The reference to check
+     * @param {Variable} variable The variable to check
+     * @returns {boolean} Whether it is a valid resolution
+     */
     __isValidResolution(ref, variable) { // eslint-disable-line class-methods-use-this, no-unused-vars  -- Desired as instance method with signature
         return true;
     }
 
+    /**
+     * Checks whether the reference can be resolved
+     * @param {Reference} ref The reference to check
+     * @returns {boolean} Whether the reference can be resolved
+     */
     __resolve(ref) {
         const name = ref.identifier.name;
 
         if (!this.set.has(name)) {
             return false;
         }
-        const variable = this.set.get(name);
+        const variable = /** @type {Variable} */ (this.set.get(name));
 
         if (!this.__isValidResolution(ref, variable)) {
             return false;
@@ -323,13 +396,24 @@ class Scope {
         return true;
     }
 
+    /**
+     * Delegates the reference to the upper scope
+     * @param {Reference} ref The reference to check
+     * @returns {void}
+     */
     __delegateToUpperScope(ref) {
         if (this.upper) {
-            this.upper.__left.push(ref);
+            this.upper.__left?.push(ref);
         }
         this.through.push(ref);
     }
 
+    /**
+     * Add declared variables of the given node.
+     * @param {Variable} variable The variable
+     * @param {acorn.Node | null | undefined} node The node
+     * @returns {void}
+     */
     __addDeclaredVariablesOfNode(variable, node) {
         if (node === null || node === void 0) {
             return;
@@ -346,6 +430,15 @@ class Scope {
         }
     }
 
+    /**
+     * Defines generic
+     * @param {string} name The name
+     * @param {Map<string, Variable>} set The set
+     * @param {Variable[]} variables The variables
+     * @param {acorn.Identifier | null} node The identifier node
+     * @param {Definition | null} def The definition
+     * @returns {void}
+     */
     __defineGeneric(name, set, variables, node, def) {
         let variable;
 
@@ -366,18 +459,41 @@ class Scope {
         }
     }
 
+    /**
+     * Define generic if the node is an identifier
+     * @param {acorn.Node} node The node
+     * @param {Definition} def The definition
+     * @returns {void}
+     */
     __define(node, def) {
         if (node && node.type === Syntax.Identifier) {
             this.__defineGeneric(
-                node.name,
+
+                /** @type {acorn.Identifier} */
+                (node).name,
                 this.set,
                 this.variables,
-                node,
+
+                /** @type {acorn.Identifier} */
+                (node),
                 def
             );
         }
     }
 
+    /**
+     * Referencing.
+     * @param {acorn.Node|estreeJsx.JSXIdentifier} node The node
+     * @param {1|2|3} [assign] The flag
+     * @param {acorn.Node | null} [writeExpr] If reference is writeable, this is the tree being written to it.
+     * @param {{
+     *   pattern: acorn.Node,
+     *   node: acorn.Node
+     * } | null | undefined} [maybeImplicitGlobal] Whether it may be an implicit global.
+     * @param {boolean} [partial] The partial
+     * @param {boolean} [init] The init
+     * @returns {void}
+     */
     __referencing(node, assign, writeExpr, maybeImplicitGlobal, partial, init) {
 
         // because Array element may be null
@@ -385,18 +501,22 @@ class Scope {
             return;
         }
 
+        const nde = /** @type {acorn.Identifier} */ (node);
+
         // Specially handle like `this`.
-        if (node.name === "super") {
+        if (nde.name === "super") {
             return;
         }
 
-        const ref = new Reference(node, this, assign || Reference.READ, writeExpr, maybeImplicitGlobal, !!partial, !!init);
+        const ref = new Reference(nde, this, assign || Reference.READ, writeExpr, maybeImplicitGlobal, !!partial, !!init);
 
         this.references.push(ref);
-        this.__left.push(ref);
+        this.__left?.push(ref);
     }
 
     __detectEval() {
+
+        /** @type {Scope | null} */
         let current = this;
 
         this.directCallToEvalScope = true;
@@ -417,8 +537,8 @@ class Scope {
     /**
      * returns resolved {Reference}
      * @function Scope#resolve
-     * @param {Espree.Identifier} ident identifier to be resolved.
-     * @returns {Reference} reference
+     * @param {acorn.Identifier} ident identifier to be resolved.
+     * @returns {Reference|null} reference
      */
     resolve(ident) {
         let ref, i, iz;
@@ -461,6 +581,11 @@ class Scope {
         return true;
     }
 
+    /**
+     * Checks whether the name is used
+     * @param {string} name The name to check
+     * @returns {boolean} Whether the name is used
+     */
     isUsedName(name) {
         if (this.set.has(name)) {
             return true;
@@ -478,10 +603,19 @@ class Scope {
  * Global scope.
  */
 class GlobalScope extends Scope {
+
+    /**
+     * @param {ScopeManager} scopeManager The scope manager
+     * @param {acorn.Node} block The block node
+     */
     constructor(scopeManager, block) {
         super(scopeManager, "global", null, block, false);
         this.implicit = {
+
+            /** @type {Map<string, Variable>} */
             set: new Map(),
+
+            /** @type {Variable[]} */
             variables: [],
 
             /**
@@ -489,15 +623,23 @@ class GlobalScope extends Scope {
              * need to be linked to the variable they refer to).
              * @member {Reference[]} Scope#implicit#left
              */
+            /** @type {Reference[]} */
             left: []
         };
     }
 
+    /**
+     * Closes
+     * @param {ScopeManager} scopeManager The scope manager
+     * @returns {Scope | null} The upper scope
+     */
     __close(scopeManager) {
         const implicit = [];
 
-        for (let i = 0, iz = this.__left.length; i < iz; ++i) {
-            const ref = this.__left[i];
+        const left = /** @type {Reference[]} */ (this.__left);
+
+        for (let i = 0, iz = left.length; i < iz; ++i) {
+            const ref = left[i];
 
             if (ref.__maybeImplicitGlobal && !this.set.has(ref.identifier.name)) {
                 implicit.push(ref.__maybeImplicitGlobal);
@@ -527,18 +669,33 @@ class GlobalScope extends Scope {
         return null;
     }
 
+    /**
+     * Define implicit
+     * @param {acorn.Node} node The node
+     * @param {Definition} def The definition
+     * @returns {void}
+     */
     __defineImplicit(node, def) {
         if (node && node.type === Syntax.Identifier) {
             this.__defineGeneric(
-                node.name,
+
+                /** @type {acorn.Identifier} */
+                (node).name,
                 this.implicit.set,
                 this.implicit.variables,
-                node,
+
+                /** @type {acorn.Identifier} */
+                (node),
                 def
             );
         }
     }
 
+    /**
+     * Add variables and resolve their references.
+     * @param {string[]} names Names of global variables to add.
+     * @returns {void}
+     */
     __addVariables(names) {
         for (const name of names) {
             this.__defineGeneric(
@@ -559,7 +716,7 @@ class GlobalScope extends Scope {
                 const variable = this.set.get(name);
 
                 reference.resolved = variable;
-                variable.references.push(reference);
+                variable?.references.push(reference);
 
                 return false;
             }
@@ -589,6 +746,12 @@ class GlobalScope extends Scope {
  * Module scope.
  */
 class ModuleScope extends Scope {
+
+    /**
+     * @param {ScopeManager} scopeManager The scope manager
+     * @param {Scope | null} upperScope The upper scope
+     * @param {acorn.Node} block The block node
+     */
     constructor(scopeManager, upperScope, block) {
         super(scopeManager, "module", upperScope, block, false);
     }
@@ -598,13 +761,27 @@ class ModuleScope extends Scope {
  * Function expression name scope.
  */
 class FunctionExpressionNameScope extends Scope {
+
+    /**
+     * @param {ScopeManager} scopeManager The scope manager
+     * @param {Scope | null} upperScope The upper scope
+     * @param {acorn.FunctionExpression} block The block node
+     */
     constructor(scopeManager, upperScope, block) {
         super(scopeManager, "function-expression-name", upperScope, block, false);
-        this.__define(block.id,
+
+        const blk =
+            /**
+             * @type {acorn.FunctionExpression & {
+             *   id: NonNullable<Required<acorn.FunctionExpression>["id"]>
+             * }}
+             */ (block);
+
+        this.__define(blk.id,
             new Definition(
                 Variable.FunctionName,
-                block.id,
-                block,
+                blk.id,
+                blk,
                 null,
                 null,
                 null
@@ -617,6 +794,12 @@ class FunctionExpressionNameScope extends Scope {
  * Catch scope.
  */
 class CatchScope extends Scope {
+
+    /**
+     * @param {ScopeManager} scopeManager The scope manager
+     * @param {Scope | null} upperScope The upper scope
+     * @param {acorn.Node} block The block node
+     */
     constructor(scopeManager, upperScope, block) {
         super(scopeManager, "catch", upperScope, block, false);
     }
@@ -626,17 +809,30 @@ class CatchScope extends Scope {
  * With statement scope.
  */
 class WithScope extends Scope {
+
+    /**
+     * @param {ScopeManager} scopeManager The scope manager
+     * @param {Scope | null} upperScope The upper scope
+     * @param {acorn.Node} block The block node
+     */
     constructor(scopeManager, upperScope, block) {
         super(scopeManager, "with", upperScope, block, false);
     }
 
+    /**
+     * Closes
+     * @param {ScopeManager} scopeManager The scope manager
+     * @returns {Scope | null} The upper scope
+     */
     __close(scopeManager) {
         if (this.__shouldStaticallyClose(scopeManager)) {
             return super.__close(scopeManager);
         }
 
-        for (let i = 0, iz = this.__left.length; i < iz; ++i) {
-            const ref = this.__left[i];
+        const left = /** @type {Reference[]} */ (this.__left);
+
+        for (let i = 0, iz = left.length; i < iz; ++i) {
+            const ref = left[i];
 
             ref.tainted = true;
             this.__delegateToUpperScope(ref);
@@ -651,6 +847,12 @@ class WithScope extends Scope {
  * Block scope.
  */
 class BlockScope extends Scope {
+
+    /**
+     * @param {ScopeManager} scopeManager The scope manager
+     * @param {Scope | null} upperScope The upper scope
+     * @param {acorn.Node} block The block node
+     */
     constructor(scopeManager, upperScope, block) {
         super(scopeManager, "block", upperScope, block, false);
     }
@@ -660,6 +862,12 @@ class BlockScope extends Scope {
  * Switch scope.
  */
 class SwitchScope extends Scope {
+
+    /**
+     * @param {ScopeManager} scopeManager The scope manager
+     * @param {Scope | null} upperScope The upper scope
+     * @param {acorn.Node} block The block node
+     */
     constructor(scopeManager, upperScope, block) {
         super(scopeManager, "switch", upperScope, block, false);
     }
@@ -669,6 +877,13 @@ class SwitchScope extends Scope {
  * Function scope.
  */
 class FunctionScope extends Scope {
+
+    /**
+     * @param {ScopeManager} scopeManager The scope manager
+     * @param {Scope | null} upperScope The upper scope
+     * @param {acorn.Node} block The block node
+     * @param {boolean} isMethodDefinition Whether it is a method definition
+     */
     constructor(scopeManager, upperScope, block, isMethodDefinition) {
         super(scopeManager, "function", upperScope, block, isMethodDefinition);
 
@@ -697,7 +912,7 @@ class FunctionScope extends Scope {
             return true;
         }
 
-        const variable = this.set.get("arguments");
+        const variable = /** @type {Variable} */ (this.set.get("arguments"));
 
         assert(variable, "Always have arguments variable.");
         return variable.tainted || variable.references.length !== 0;
@@ -727,6 +942,13 @@ class FunctionScope extends Scope {
     //         const x = 2
     //         console.log(a)
     //     }
+
+    /**
+     * Checks whether it is a valid resolution
+     * @param {Reference} ref The reference to check
+     * @param {Variable} variable The variable to check
+     * @returns {boolean} Whether it is a valid resolution
+     */
     __isValidResolution(ref, variable) {
 
         // If `options.nodejsScope` is true, `this.block` becomes a Program node.
@@ -734,13 +956,26 @@ class FunctionScope extends Scope {
             return true;
         }
 
-        const bodyStart = this.block.body.range[0];
+        const bodyStart = /** @type {number} */ (
+            /** @type {acorn.FunctionDeclaration|acorn.FunctionExpression} */ (
+                this.block
+            ).body.range?.[0]
+        );
 
         // It's invalid resolution in the following case:
         return !(
             variable.scope === this &&
-            ref.identifier.range[0] < bodyStart && // the reference is in the parameter part.
-            variable.defs.every(d => d.name.range[0] >= bodyStart) // the variable is in the body.
+
+            /** @type {number} */
+            (
+                ref.identifier.range?.[0]
+            ) < bodyStart && // the reference is in the parameter part.
+            variable.defs.every(
+                d =>
+
+                    /** @type {number} */
+                    (d.name.range?.[0]) >= bodyStart
+            ) // the variable is in the body.
         );
     }
 }
@@ -749,6 +984,12 @@ class FunctionScope extends Scope {
  * Scope of for, for-in, and for-of statements.
  */
 class ForScope extends Scope {
+
+    /**
+     * @param {ScopeManager} scopeManager The scope manager
+     * @param {Scope | null} upperScope The upper scope
+     * @param {acorn.Node} block The block node
+     */
     constructor(scopeManager, upperScope, block) {
         super(scopeManager, "for", upperScope, block, false);
     }
@@ -758,6 +999,12 @@ class ForScope extends Scope {
  * Class scope.
  */
 class ClassScope extends Scope {
+
+    /**
+     * @param {ScopeManager} scopeManager The scope manager
+     * @param {Scope | null} upperScope The upper scope
+     * @param {acorn.Node} block The block node
+     */
     constructor(scopeManager, upperScope, block) {
         super(scopeManager, "class", upperScope, block, false);
     }
@@ -767,6 +1014,12 @@ class ClassScope extends Scope {
  * Class field initializer scope.
  */
 class ClassFieldInitializerScope extends Scope {
+
+    /**
+     * @param {ScopeManager} scopeManager The scope manager
+     * @param {Scope | null} upperScope The upper scope
+     * @param {acorn.Node} block The block node
+     */
     constructor(scopeManager, upperScope, block) {
         super(scopeManager, "class-field-initializer", upperScope, block, true);
     }
@@ -776,6 +1029,12 @@ class ClassFieldInitializerScope extends Scope {
  * Class static block scope.
  */
 class ClassStaticBlockScope extends Scope {
+
+    /**
+     * @param {ScopeManager} scopeManager The scope manager
+     * @param {Scope | null} upperScope The upper scope
+     * @param {acorn.Node} block The block node
+     */
     constructor(scopeManager, upperScope, block) {
         super(scopeManager, "class-static-block", upperScope, block, true);
     }

@@ -4,8 +4,13 @@
   "homepage": "https://github.com/eslint/js/blob/main/packages/eslint-scope/README.md",
   "main": "./dist/eslint-scope.cjs",
   "type": "module",
+  "types": "./dist/eslint-scope/lib/index.cjs.d.cts",
   "exports": {
     ".": {
+      "types": {
+        "import": "./dist/eslint-scope/lib/index.d.ts",
+        "require": "./dist/eslint-scope/lib/index.cjs.d.cts"
+      },
       "import": "./lib/index.js",
       "require": "./dist/eslint-scope.cjs"
     },
@@ -29,7 +34,9 @@
   },
   "license": "BSD-2-Clause",
   "scripts": {
-    "build": "rollup -c",
+    "attw": "attw --pack",
+    "tsc": "rm -Rf dist && tsc && tsc -p tsconfig-cjs.json",
+    "build": "npm run tsc && rollup -c",
     "build:update-version": "node tools/update-version.js",
     "prepublishOnly": "npm run build:update-version && npm run build",
     "pretest": "npm run build",
@@ -39,13 +46,18 @@
     "LICENSE",
     "README.md",
     "lib",
-    "dist/eslint-scope.cjs"
+    "dist"
   ],
   "dependencies": {
+    "@types/esrecurse": "^4.3.1",
+    "@types/estraverse": "^5.1.7",
+    "@types/estree": "^1.0.8",
+    "@types/estree-jsx": "^1.0.5",
     "esrecurse": "^4.3.0",
     "estraverse": "^5.2.0"
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.2",
     "@typescript-eslint/parser": "^8.7.0",
     "chai": "^6.0.0",
     "eslint-visitor-keys": "^5.0.0",
@@ -53,6 +65,6 @@
     "npm-license": "^0.3.3",
     "rollup": "^2.52.7",
     "shelljs": "^0.8.5",
-    "typescript": "^5.4.2"
+    "typescript": "^5.9.3"
   }
 }

@@ -25,11 +25,23 @@
 import estraverse from "estraverse";
 import esrecurse from "esrecurse";
 
+/**
+ * @import * as acorn from "acorn";
+ */
+
+/**
+ * @typedef {(node: acorn.Node, info: {
+ *   topLevel: boolean,
+ *   rest: boolean,
+ *   assignments: (acorn.AssignmentPattern|acorn.AssignmentExpression)[]
+ * }) => void} PatternVisitorCallback
+ */
+
 const { Syntax } = estraverse;
 
 /**
  * Get last array element
- * @param {Array} xs array
+ * @param {Array<any>} xs array
  * @returns {any} Last elment
  */
 function getLast(xs) {
@@ -40,6 +52,12 @@ function getLast(xs) {
  * Visitor for destructuring patterns.
  */
 class PatternVisitor extends esrecurse.Visitor {
+
+    /**
+     * Checks whether the supplied `node` is a `Pattern`
+     * @param {acorn.Node} node The node to check
+     * @returns {boolean} Whether the `node` is a `Pattern`
+     */
     static isPattern(node) {
         const nodeType = node.type;
 
@@ -53,15 +71,31 @@ class PatternVisitor extends esrecurse.Visitor {
         );
     }
 
+    /**
+     * @param {esrecurse.VisitorOptions} options The Pattern visitor options
+     * @param {acorn.Node | null | undefined} rootPattern The node to match to identify the root
+     * @param {PatternVisitorCallback} callback Callback to invoke upon visiting an `Identifier`
+     */
     constructor(options, rootPattern, callback) {
         super(null, options);
         this.rootPattern = rootPattern;
         this.callback = callback;
+
+        /** @type {(acorn.AssignmentPattern|acorn.AssignmentExpression)[]} */
         this.assignments = [];
+
+        /** @type {acorn.Node[]} */
         this.rightHandNodes = [];
+
+        /** @type {acorn.RestElement[]} */
         this.restElements = [];
     }
 
+    /**
+     * Calls the callback for the visited `Identifier`.
+     * @param {acorn.Identifier} pattern The pattern being visited.
+     * @returns {void}
+     */
     Identifier(pattern) {
         const lastRestElement = getLast(this.restElements);
 
@@ -72,6 +106,11 @@ class PatternVisitor extends esrecurse.Visitor {
         });
     }
 
+    /**
+     * Visits the property's `value`.
+     * @param {acorn.Property} property The property being visited.
+     * @returns {void}
+     */
     Property(property) {
 
         // Computed property's key is a right hand node.
@@ -85,6 +124,11 @@ class PatternVisitor extends esrecurse.Visitor {
         this.visit(property.value);
     }
 
+    /**
+     * Visits the array pattern's elements.
+     * @param {acorn.ArrayPattern} pattern The array pattern being visited.
+     * @returns {void}
+     */
     ArrayPattern(pattern) {
         for (let i = 0, iz = pattern.elements.length; i < iz; ++i) {
             const element = pattern.elements[i];
@@ -93,6 +137,11 @@ class PatternVisitor extends esrecurse.Visitor {
         }
     }
 
+    /**
+     * Visits the assignment pattern's `left` property.
+     * @param {acorn.AssignmentPattern} pattern The assignment pattern being visited.
+     * @returns {void}
+     */
     AssignmentPattern(pattern) {
         this.assignments.push(pattern);
         this.visit(pattern.left);
@@ -100,12 +149,22 @@ class PatternVisitor extends esrecurse.Visitor {
         this.assignments.pop();
     }
 
+    /**
+     * Visits the rest element's argument.
+     * @param {acorn.RestElement} pattern The rest element being visited.
+     * @returns {void}
+     */
     RestElement(pattern) {
         this.restElements.push(pattern);
         this.visit(pattern.argument);
         this.restElements.pop();
     }
 
+    /**
+     * Tracks the member expression's properties.
+     * @param {acorn.MemberExpression} node The member expression being visited.
+     * @returns {void}
+     */
     MemberExpression(node) {
 
         // Computed property's key is a right hand node.
@@ -124,14 +183,29 @@ class PatternVisitor extends esrecurse.Visitor {
     // But espree 2.0 parses to ArrayExpression, ObjectExpression, etc...
     //
 
+    /**
+     * Visits the spread element's argument.
+     * @param {acorn.SpreadElement} node The spread element being visited.
+     * @returns {void}
+     */
     SpreadElement(node) {
         this.visit(node.argument);
     }
 
+    /**
+     * Visits the array expression's elements.
+     * @param {acorn.ArrayExpression} node The array expression being visited.
+     * @returns {void}
+     */
     ArrayExpression(node) {
         node.elements.forEach(this.visit, this);
     }
 
+    /**
+     * Visits the assignment expression's `left` argument.
+     * @param {acorn.AssignmentExpression} node The assignment expression being visited.
+     * @returns {void}
+     */
     AssignmentExpression(node) {
         this.assignments.push(node);
         this.visit(node.left);
@@ -139,6 +213,11 @@ class PatternVisitor extends esrecurse.Visitor {
         this.assignments.pop();
     }
 
+    /**
+     * Visits the call expression's callee.
+     * @param {acorn.CallExpression} node The call expression being visited.
+     * @returns {void}
+     */
     CallExpression(node) {
 
         // arguments are right hand nodes.

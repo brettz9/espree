@@ -56,8 +56,15 @@ import Variable from "./variable.js";
 import eslintScopeVersion from "./version.js";
 
 /**
+ * @import * as acorn from "acorn";
+ * @import esrecurse from "esrecurse";
+ * @import { ScopeManagerOptions } from "./scope-manager.js";
+ * @import { NestedObject, NestedSubObject } from "./types.js";
+ */
+
+/**
  * Set the default options
- * @returns {Object} options
+ * @returns {NestedObject} options
  */
 function defaultOptions() {
     return {
@@ -73,16 +80,16 @@ function defaultOptions() {
 
 /**
  * Preform deep update on option object
- * @param {Object} target Options
- * @param {Object} override Updates
+ * @param {NestedObject} target Options
+ * @param {NestedObject} override Updates
  * @returns {Object} Updated options
  */
 function updateDeeply(target, override) {
 
     /**
      * Is hash object
-     * @param {Object} value Test value
-     * @returns {boolean} Result
+     * @param {NestedSubObject} value Test value
+     * @returns {value is NestedObject} Result
      */
     function isHashObject(value) {
         return typeof value === "object" && value instanceof Object && !(value instanceof Array) && !(value instanceof RegExp);
@@ -94,7 +101,7 @@ function updateDeeply(target, override) {
 
             if (isHashObject(val)) {
                 if (isHashObject(target[key])) {
-                    updateDeeply(target[key], val);
+                    updateDeeply((target[key]), val);
                 } else {
                     target[key] = updateDeeply({}, val);
                 }
@@ -110,7 +117,7 @@ function updateDeeply(target, override) {
  * Main interface function. Takes an Espree syntax tree and returns the
  * analyzed scopes.
  * @function analyze
- * @param {espree.Tree} tree Abstract Syntax Tree
+ * @param {acorn.Node} tree Abstract Syntax Tree
  * @param {Object} providedOptions Options that tailor the scope analysis
  * @param {boolean} [providedOptions.optimistic=false] the optimistic flag
  * @param {boolean} [providedOptions.ignoreEval=false] whether to check 'eval()' calls
@@ -127,7 +134,9 @@ function updateDeeply(target, override) {
  * @returns {ScopeManager} ScopeManager
  */
 function analyze(tree, providedOptions) {
-    const options = updateDeeply(defaultOptions(), providedOptions);
+    const options = /** @type {ScopeManagerOptions & esrecurse.VisitorOptions} */ (
+        updateDeeply(defaultOptions(), providedOptions)
+    );
     const scopeManager = new ScopeManager(options);
     const referencer = new Referencer(options, scopeManager);
 

@@ -39,10 +39,37 @@ import {
 import { assert } from "./assert.js";
 
 /**
+ * @import * as acorn from "acorn";
+ * @import Variable from "./variable.js";
+ * @import { Scope } from "./scope.js";
+ *
+ * Todo: Change this later
+ * @import * as espree from "../../espree/espree.js";
+ */
+
+/**
+ * @typedef {{
+ *   optimistic: boolean,
+ *   ignoreEval: boolean,
+ *   jsx: boolean,
+ *   nodejsScope: boolean,
+ *   sourceType: espree.ParserOptions['sourceType'],
+ *   impliedStrict: boolean,
+ *   ecmaVersion: NonNullable<espree.ParserOptions['ecmaVersion']>
+ * }} ScopeManagerOptions
+ */
+
+/**
  * @constructor ScopeManager
  */
 class ScopeManager {
+
+    /**
+     * @param {ScopeManagerOptions} options The options for the scope manager
+     */
     constructor(options) {
+
+        /** @type {Scope[]} */
         this.scopes = [];
         this.globalScope = null;
         this.__nodeToScope = new WeakMap();
@@ -76,10 +103,15 @@ class ScopeManager {
     }
 
     isStrictModeSupported() {
-        return this.__options.ecmaVersion >= 5;
+        return this.__options.ecmaVersion === "latest" ||
+            this.__options.ecmaVersion >= 5;
     }
 
-    // Returns appropriate scope for this node.
+    /**
+     * Returns appropriate scope for this node.
+     * @param {acorn.Node} node The node to get.
+     * @returns {Scope[]|undefined} The scope for the given node.
+     */
     __get(node) {
         return this.__nodeToScope.get(node);
     }
@@ -90,7 +122,7 @@ class ScopeManager {
      * "are declared by the node" means the node is same as `Variable.defs[].node` or `Variable.defs[].parent`.
      * If the node declares nothing, this method returns an empty array.
      * CAUTION: This API is experimental. See https://github.com/estools/escope/pull/69 for more details.
-     * @param {Espree.Node} node a node to get.
+     * @param {acorn.Node} node a node to get.
      * @returns {Variable[]} variables that declared by the node.
      */
     getDeclaredVariables(node) {
@@ -100,7 +132,7 @@ class ScopeManager {
     /**
      * acquire scope from node.
      * @function ScopeManager#acquire
-     * @param {Espree.Node} node node for the acquired scope.
+     * @param {acorn.Node} node node for the acquired scope.
      * @param {?boolean} [inner=false] look up the most inner scope, default value is false.
      * @returns {Scope?} Scope from node
      */
@@ -154,8 +186,8 @@ class ScopeManager {
     /**
      * acquire all scopes from node.
      * @function ScopeManager#acquireAll
-     * @param {Espree.Node} node node for the acquired scope.
-     * @returns {Scopes?} Scope array
+     * @param {acorn.Node} node node for the acquired scope.
+     * @returns {Scope[]|undefined} Scope array
      */
     acquireAll(node) {
         return this.__get(node);
@@ -164,7 +196,7 @@ class ScopeManager {
     /**
      * release the node.
      * @function ScopeManager#release
-     * @param {Espree.Node} node releasing node.
+     * @param {acorn.Node} node releasing node.
      * @param {?boolean} [inner=false] look up the most inner scope, default value is false.
      * @returns {Scope?} upper scope for the node.
      */
@@ -189,13 +221,18 @@ class ScopeManager {
      * @returns {void}
      */
     addGlobals(names) {
-        this.globalScope.__addVariables(names);
+        this.globalScope?.__addVariables(names);
     }
 
     attach() { } // eslint-disable-line class-methods-use-this -- Desired as instance method
 
     detach() { } // eslint-disable-line class-methods-use-this -- Desired as instance method
 
+    /**
+     * Nests the given scope.
+     * @param {Scope} scope The supplied Scope.
+     * @returns {Scope} The supplied Scope.
+     */
     __nestScope(scope) {
         if (scope instanceof GlobalScope) {
             assert(this.__currentScope === null);
@@ -205,56 +242,118 @@ class ScopeManager {
         return scope;
     }
 
+    /**
+     * Nests the given global scope node.
+     * @param {acorn.Node} node The node to nest
+     * @returns {Scope} The nested scope
+     */
     __nestGlobalScope(node) {
         return this.__nestScope(new GlobalScope(this, node));
     }
 
+    /**
+     * Nests the given block scope node.
+     * @param {acorn.Node} node The node to nest
+     * @returns {Scope} The nested scope
+     */
     __nestBlockScope(node) {
         return this.__nestScope(new BlockScope(this, this.__currentScope, node));
     }
 
+    /**
+     * Nests the given function scope node.
+     * @param {acorn.Node} node The node to nest
+     * @param {boolean} isMethodDefinition Whether the node is a method definition
+     * @returns {Scope} The nested scope
+     */
     __nestFunctionScope(node, isMethodDefinition) {
         return this.__nestScope(new FunctionScope(this, this.__currentScope, node, isMethodDefinition));
     }
 
+    /**
+     * Nests the given for scope node.
+     * @param {acorn.Node} node The node to nest
+     * @returns {Scope} The nested scope
+     */
     __nestForScope(node) {
         return this.__nestScope(new ForScope(this, this.__currentScope, node));
     }
 
+    /**
+     * Nests the given catch scope node.
+     * @param {acorn.Node} node The node to nest
+     * @returns {Scope} The nested scope
+     */
     __nestCatchScope(node) {
         return this.__nestScope(new CatchScope(this, this.__currentScope, node));
     }
 
+    /**
+     * Nests the given with scope node.
+     * @param {acorn.Node} node The node to nest
+     * @returns {Scope} The nested scope
+     */
     __nestWithScope(node) {
         return this.__nestScope(new WithScope(this, this.__currentScope, node));
     }
 
+    /**
+     * Nests the given class scope node.
+     * @param {acorn.Node} node The node to nest
+     * @returns {Scope} The nested scope
+     */
     __nestClassScope(node) {
         return this.__nestScope(new ClassScope(this, this.__currentScope, node));
     }
 
+    /**
+     * Nests the given class field initializer scope node.
+     * @param {acorn.Node} node The node to nest
+     * @returns {Scope} The nested scope
+     */
     __nestClassFieldInitializerScope(node) {
         return this.__nestScope(new ClassFieldInitializerScope(this, this.__currentScope, node));
     }
 
+    /**
+     * Nests the given class static block scope node.
+     * @param {acorn.Node} node The node to nest
+     * @returns {Scope} The nested scope
+     */
     __nestClassStaticBlockScope(node) {
         return this.__nestScope(new ClassStaticBlockScope(this, this.__currentScope, node));
     }
 
+    /**
+     * Nests the given switch scope node.
+     * @param {acorn.Node} node The node to nest
+     * @returns {Scope} The nested scope
+     */
     __nestSwitchScope(node) {
         return this.__nestScope(new SwitchScope(this, this.__currentScope, node));
     }
 
+    /**
+     * Nests the given module scope node.
+     * @param {acorn.Node} node The node to nest
+     * @returns {Scope} The nested scope
+     */
     __nestModuleScope(node) {
         return this.__nestScope(new ModuleScope(this, this.__currentScope, node));
     }
 
+    /**
+     * Nests the given function expression name scope node.
+     * @param {acorn.FunctionExpression} node The node to nest
+     * @returns {Scope} The nested scope
+     */
     __nestFunctionExpressionNameScope(node) {
         return this.__nestScope(new FunctionExpressionNameScope(this, this.__currentScope, node));
     }
 
     __isES6() {
-        return this.__options.ecmaVersion >= 6;
+        return this.__options.ecmaVersion === "latest" ||
+            this.__options.ecmaVersion >= 6;
     }
 }
 
